@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <PackageReference Include="ClosedXML" Version="0.102.1" />
+    <PackageReference Include="Microsoft.Office.Interop.Outlook" Version="15.0.4797.1004" />
   </ItemGroup>
 
 </Project>

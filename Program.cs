@@ -3,13 +3,14 @@ using Microsoft.VisualBasic.FileIO;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Outlook = Microsoft.Office.Interop.Outlook;
 
 class Program
 {
     static void Main(string[] args)
     {
-        var file_path = "C:/Users/input.csv";
-        var output_file_path = "C:/Users/output.xlsx";
+        var file_path = "C:/Users/wojciech.mazor/Desktop/input.csv";
+        var output_file_path = "C:/Users/wojciech.mazor/Desktop/output.xlsx";
 
         try
         {
@@ -31,9 +32,16 @@ class Program
                     }
 
                     var numerTelefonu = fields[3];
+                    //Console.WriteLine(numerTelefonu);
                     var czasAsString = fields[16].Trim();
+                    //Console.WriteLine(czasAsString);
+                    var typRozmowy = fields[10];
+                    //Console.WriteLine(typRozmowy);
+                    var typRuchu = fields[20];
+                    //Console.WriteLine(typRuchu);
 
-                    if (!string.IsNullOrWhiteSpace(numerTelefonu) && !string.IsNullOrWhiteSpace(czasAsString) && int.TryParse(czasAsString, out int czas))
+                    if (!string.IsNullOrWhiteSpace(numerTelefonu) && !string.IsNullOrWhiteSpace(czasAsString) && int.TryParse(czasAsString, out int czas)
+                        && (typRozmowy == "Rozmowy krajowe" || typRozmowy == "Rozmowy międzynarodowe") && typRuchu == "Ruch")
                     {
                         data.Add((NumerTelefonu: numerTelefonu, Czas: czas));
                     }
@@ -66,11 +74,33 @@ class Program
 
                 workbook.SaveAs(output_file_path);
             }
+
+            
         }
         catch (Exception ex)
         {
             Console.WriteLine("Wystąpił błąd: " + ex.Message);
         }
+    }
+
+    static void SendEmailWithAttachment(string attachmentPath, string recipient, string subject, string body)
+    {
+        var outlookApp = new Outlook.Application();
+        var mailItem = (Outlook.MailItem)outlookApp.CreateItem(Outlook.OlItemType.olMailItem);
+
+        mailItem.Subject = subject;
+        mailItem.Body = body;
+        mailItem.To = recipient;
+
+        if (!string.IsNullOrEmpty(attachmentPath))
+        {
+            mailItem.Attachments.Add(attachmentPath, Outlook.OlAttachmentType.olByValue, Type.Missing, Type.Missing);
+        }
+
+        // Odkomentuj poniższą linię, aby wyświetlić okno e-maila przed wysłaniem
+        // mailItem.Display(true);
+
+        mailItem.Send();
     }
 
     static string ConvertSecondsToHMS(int seconds)
