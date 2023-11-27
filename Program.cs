@@ -9,9 +9,9 @@ class Program
 {
     static void Main(string[] args)
     {
-        var file_path = "C:/Users/wojciech.mazor/Desktop/input.csv";
-        var dictionary_file_path = "C:/Users/wojciech.mazor/Desktop/Słownik.csv";
-        var output_file_path = "C:/Users/wojciech.mazor/Desktop/output.xlsx";
+        var file_path = "C:/Users/input.csv";
+        var dictionary_file_path = "C:/Users/Słownik.csv";
+        var output_file_path = "C:/Users/output.xlsx";
 
         try
         {
@@ -73,6 +73,7 @@ class Program
                                           NumerTelefonu = numerTelefonu,
                                           CzasWSekundach = g.Sum(x => x.Czas),
                                           CzasWGodzinach = ConvertSecondsToHMS(g.Sum(x => x.Czas)),
+                                          IloscPolaczen = g.Count(), // Liczba połączeń
                                           Imie = imieNazwisko.Imie,
                                           Nazwisko = imieNazwisko.Nazwisko
                                       };
@@ -82,20 +83,27 @@ class Program
             using (var workbook = new XLWorkbook())
             {
                 var worksheet = workbook.Worksheets.Add("Summary");
-                worksheet.Cell("A1").Value = "Numer Telefonu";
-                worksheet.Cell("B1").Value = "CzasWSekundach";
-                worksheet.Cell("C1").Value = "CzasWGodzinach";
-                worksheet.Cell("D1").Value = "Imię";
-                worksheet.Cell("E1").Value = "Nazwisko";
+                worksheet.Cell("A1").Value = "Telefon komórkowy";
+                worksheet.Cell("B1").Value = "Imię";
+                worksheet.Cell("C1").Value = "Nazwisko";
+                worksheet.Cell("D1").Value = "Ilość telefonów poza firmę"; // Nowa kolumna
+                worksheet.Cell("E1").Value = "Czas trwania rozmów";
+                //worksheet.Cell("B1").Value = "CzasWSekundach";
+
+
+
 
                 int row = 2;
                 foreach (var item in groupedData)
                 {
                     worksheet.Cell(row, 1).Value = item.NumerTelefonu;
-                    worksheet.Cell(row, 2).Value = item.CzasWSekundach;
-                    worksheet.Cell(row, 3).Value = item.CzasWGodzinach;
-                    worksheet.Cell(row, 4).Value = item.Imie;
-                    worksheet.Cell(row, 5).Value = item.Nazwisko;
+                    worksheet.Cell(row, 2).Value = item.Imie;
+                    worksheet.Cell(row, 3).Value = item.Nazwisko;
+                    worksheet.Cell(row, 4).Value = item.IloscPolaczen; // Dodajemy wartość do nowej kolumny
+                    worksheet.Cell(row, 5).Value = item.CzasWGodzinach;
+
+                                                                       //worksheet.Cell(row, 2).Value = item.CzasWSekundach;
+
                     row++;
                 }
 
