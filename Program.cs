@@ -1,4 +1,5 @@
 ﻿using ClosedXML.Excel;
+using Microsoft.VisualBasic.FileIO;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,66 +8,63 @@ class Program
 {
     static void Main(string[] args)
     {
-        var file_path = "C:/Users/wojciech.mazor/Desktop/biling_07_2023.xlsx";
-        var output_file_path = "C:/Users/wojciech.mazor/Desktop/output.xlsx";
+        var file_path = "C:/Users/input.csv";
+        var output_file_path = "C:/Users/output.xlsx";
 
         try
         {
-            using (var workbook = new XLWorkbook(file_path))
+            var data = new List<(string NumerTelefonu, int Czas)>();
+
+            using (TextFieldParser parser = new TextFieldParser(file_path))
             {
-                var worksheet = workbook.Worksheet(1);
-                var rows = worksheet.RangeUsed().RowsUsed().Skip(1); // Skip header row
-
-                var data = rows.Select(r =>
+                parser.TextFieldType = FieldType.Delimited;
+                parser.SetDelimiters(";");
+                //test
+                bool isFirstRow = true;
+                while (!parser.EndOfData)
                 {
-                    var numerTelefonu = r.Cell("D").GetValue<string>();
-                    var czasAsString = r.Cell("Q").GetValue<string>()?.Trim(); // Użyj operatora ?. dla bezpieczeństwa null
-
-                    if (!string.IsNullOrWhiteSpace(czasAsString) && int.TryParse(czasAsString, out int czas))
+                    string[] fields = parser.ReadFields();
+                    if (isFirstRow)
                     {
-                        return new { NumerTelefonu = numerTelefonu, Czas = czas };
+                        isFirstRow = false;
+                        continue;
                     }
-                    else
+
+                    var numerTelefonu = fields[3];
+                    var czasAsString = fields[16].Trim();
+
+                    if (!string.IsNullOrWhiteSpace(numerTelefonu) && !string.IsNullOrWhiteSpace(czasAsString) && int.TryParse(czasAsString, out int czas))
                     {
-                        // Pomiń ten rekord lub zareaguj odpowiednio
-                        //Console.WriteLine($"Nie można przekonwertować wartości '{czasAsString}' na liczbę całkowitą. Pomijanie rekordu.");
-                        return null;
+                        data.Add((NumerTelefonu: numerTelefonu, Czas: czas));
                     }
-                }).Where(x => x != null).ToList(); // Usuń nulle z listy
+                }
+            }
 
+            var groupedData = data.GroupBy(d => d.NumerTelefonu)
+                                  .Select(g => new
+                                  {
+                                      NumerTelefonu = g.Key,
+                                      CzasWSekundach = g.Sum(x => x.Czas),
+                                      CzasWGodzinach = ConvertSecondsToHMS(g.Sum(x => x.Czas))
+                                  }).ToList();
 
-                if (data.Any(d => d.NumerTelefonu == null || d.Czas == 0))
+            using (var workbook = new XLWorkbook())
+            {
+                var worksheet = workbook.Worksheets.Add("Summary");
+                worksheet.Cell("A1").Value = "Numer Telefonu";
+                worksheet.Cell("B1").Value = "CzasWSekundach";
+                worksheet.Cell("C1").Value = "CzasWGodzinach";
+
+                int row = 2;
+                foreach (var item in groupedData)
                 {
-                    Console.WriteLine("Kolumny 'Numer telefonu' lub 'Czas' nie istnieją w danych.");
-                    return;
+                    worksheet.Cell(row, 1).Value = item.NumerTelefonu;
+                    worksheet.Cell(row, 2).Value = item.CzasWSekundach;
+                    worksheet.Cell(row, 3).Value = item.CzasWGodzinach;
+                    row++;
                 }
 
-                var groupedData = data.GroupBy(d => d.NumerTelefonu)
-                                      .Select(g => new
-                                      {
-                                          NumerTelefonu = g.Key,
-                                          CzasWSekundach = g.Sum(x => x.Czas),
-                                          CzasWGodzinach = ConvertSecondsToHMS(g.Sum(x => x.Czas))
-                                      }).ToList();
-
-                using (var newWorkbook = new XLWorkbook())
-                {
-                    var newWorksheet = newWorkbook.Worksheets.Add("Summary");
-                    newWorksheet.Cell("A1").Value = "Numer Telefonu";
-                    newWorksheet.Cell("B1").Value = "CzasWSekundach";
-                    newWorksheet.Cell("C1").Value = "CzasWGodzinach";
-
-                    int row = 2;
-                    foreach (var item in groupedData)
-                    {
-                        newWorksheet.Cell(row, 1).Value = item.NumerTelefonu;
-                        newWorksheet.Cell(row, 2).Value = item.CzasWSekundach;
-                        newWorksheet.Cell(row, 3).Value = item.CzasWGodzinach;
-                        row++;
-                    }
-
-                    newWorkbook.SaveAs(output_file_path);
-                }
+                workbook.SaveAs(output_file_path);
             }
         }
         catch (Exception ex)
