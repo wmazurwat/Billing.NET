@@ -19,7 +19,7 @@ class Program
             {
                 parser.TextFieldType = FieldType.Delimited;
                 parser.SetDelimiters(";");
-                //test
+
                 bool isFirstRow = true;
                 while (!parser.EndOfData)
                 {
